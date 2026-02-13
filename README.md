@@ -31,7 +31,8 @@ Options:
   -h, --help             Show help and exit
   -V, --version          Print version and exit
   -v                     Increase verbosity (can be used multiple times)
-  --use-https            Use HTTPS clone URLs instead of SSH
+   --use-https            Use HTTPS clone URLs instead of SSH
+   --no-submodules        Do not init/update submodules for repositories
   -d DIR, --dest DIR     Destination base directory for all repositories (default: current directory)
 
 Environment:

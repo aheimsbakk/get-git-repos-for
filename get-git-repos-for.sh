@@ -3,7 +3,7 @@
 #
 # Minimal dependencies: bash, git, curl, jq
 
-VERSION="1.0.0"
+VERSION="1.0.1"
 
 usage() {
   cat <<USAGE
@@ -15,13 +15,14 @@ USAGE
 
 help() {
   cat <<USAGE
-Usage: $(basename "$0") [options] <github-username>
+  Usage: $(basename "$0") [options] <github-username>
 
 Options:
   -h, --help             Show help and exit
   -V, --version          Print version and exit
   -v                     Increase verbosity (can be used multiple times)
   --use-https            Use HTTPS clone URLs instead of SSH
+  --no-submodules        Do not init/update submodules for repositories
   -d DIR, --dest DIR     Destination base directory for all repositories (default: current directory)
 
 Environment:
@@ -35,6 +36,7 @@ USAGE
 
 VERBOSE=0
 USE_HTTPS=0
+NO_SUBMODULES=0
 DEST_DIR="."
 
 while [[ $# -gt 0 ]]; do
@@ -77,6 +79,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --use-https)
       USE_HTTPS=1
+      shift
+      ;;
+    --no-submodules)
+      NO_SUBMODULES=1
       shift
       ;;
     --)
@@ -126,11 +132,30 @@ if ! mkdir -p "$DEST_DIR"; then
   echo "Failed to create destination directory: $DEST_DIR" >&2
   exit 8
 fi
+# Normalize destination path (expand ~ and make absolute)
+if [[ "$DEST_DIR" == ~* ]]; then
+  DEST_DIR="${DEST_DIR/#\~/$HOME}"
+fi
+if command -v realpath >/dev/null 2>&1; then
+  DEST_DIR=$(realpath "$DEST_DIR")
+else
+  # fallback: change directory and print pwd
+  DEST_DIR=$(cd "$DEST_DIR" && pwd)
+fi
 logv "Destination base directory: $DEST_DIR"
 
 tmpfile=""
 tmpfile=$(mktemp) || { echo "failed to create temp file" >&2; exit 4; }
 trap 'rm -f "$tmpfile"' EXIT
+
+# Counters for summary reporting
+TOTAL=0
+CLONED=0
+UPDATED=0
+SKIPPED_LOCAL=0
+FAILED=0
+SUBMODULE_WARN=0
+declare -a FAILED_LIST
 
 auth_header=()
 if [[ -n "${GITHUB_TOKEN:-}" ]]; then
@@ -164,19 +189,26 @@ if [[ "$USE_HTTPS" -eq 1 && -n "${GITHUB_TOKEN:-}" ]]; then
 fi
 
 # Determine API endpoint. When authenticated and the token belongs to the same
-# username we can use /user/repos to include private repositories.
+# username we can use /user/repos to include private repositories and org repos
+# by adding visibility and affiliation parameters. Ensure query parameters are
+# appended using & when needed.
 api_url="$API/users/$USERNAME/repos"
 if [[ -n "${GITHUB_TOKEN:-}" ]]; then
   # discover authenticated username
   me=$(curl -sS -H "Authorization: token ${GITHUB_TOKEN}" "$API/user" | jq -r '.login // empty' 2>/dev/null || true)
   if [[ "$me" == "$USERNAME" ]]; then
-    api_url="$API/user/repos?visibility=all"
+    api_url="$API/user/repos?visibility=all&affiliation=owner,collaborator,organization_member"
   fi
 fi
 
 # Fetch repositories, paginated
 while :; do
-  url="$api_url?per_page=$PER_PAGE&page=$page"
+  # Append pagination params correctly depending on whether api_url already has ?
+  if [[ "$api_url" == *\?* ]]; then
+    url="$api_url&per_page=$PER_PAGE&page=$page"
+  else
+    url="$api_url?per_page=$PER_PAGE&page=$page"
+  fi
   logv "Fetching $url"
   if ! resp=$(curl -sS "${auth_header[@]}" "$url"); then
     echo "Failed to fetch $url" >&2
@@ -218,13 +250,15 @@ while IFS= read -r line || [[ -n "$line" ]]; do
     url="$ssh_url"
   fi
 
+  TOTAL=$((TOTAL+1))
   log "Processing: $name"
   if [[ ! -d "$repo_dir" ]]; then
     logv "Cloning $name into $repo_dir"
     if "${git_cmd[@]}" clone "$url" "$repo_dir"; then
       log "Cloned $name"
+      CLONED=$((CLONED+1))
       # Handle submodules. When using HTTPS, rewrite submodule URLs that use SSH (git@) or git://
-      if [[ -f "$repo_dir/.gitmodules" ]]; then
+  if [[ $NO_SUBMODULES -eq 0 && -f "$repo_dir/.gitmodules" ]]; then
         logv "Repository has submodules; initializing"
         if [[ "$USE_HTTPS" -eq 1 ]]; then
           logv "Converting submodule URLs to HTTPS where necessary"
@@ -232,17 +266,32 @@ while IFS= read -r line || [[ -n "$line" ]]; do
             cp "$repo_dir/.gitmodules" "$repo_dir/.gitmodules.bak" 2>/dev/null || true
             sed -E -i 's#git@github.com:([^[:space:]]+)#https://github.com/\1#g; s#git://github.com/([^[:space:]]+)#https://github.com/\1#g' "$repo_dir/.gitmodules" || true
             logv "Rewrote $repo_dir/.gitmodules to use HTTPS (backup at .gitmodules.bak)"
+            # Sync .git/config submodule entries so subsequent operations use rewritten URLs
             "${git_cmd[@]}" -C "$repo_dir" submodule sync --recursive || true
+            # Also update .git/config entries from .gitmodules where possible
+            if command -v git >/dev/null 2>&1; then
+              while read -r key value; do
+                # key is like "submodule.<name>.url"
+                if [[ -n "$key" && -n "$value" ]]; then
+                  # set the config to the new URL
+                  "${git_cmd[@]}" -C "$repo_dir" config "$key" "$value" || true
+                fi
+              done < <("git" -C "$repo_dir" config -f .gitmodules --get-regexp '^submodule\..*\.url$' 2>/dev/null | awk '{print $1" "$2}')
+            fi
           else
             logv "No SSH/git:// submodule URLs detected in .gitmodules"
           fi
         fi
         if ! "${git_cmd[@]}" -C "$repo_dir" submodule update --init --recursive; then
           echo "Warning: submodule update failed for $name; some submodules may not have been cloned." >&2
+          SUBMODULE_WARN=$((SUBMODULE_WARN+1))
+          FAILED_LIST+=("$name: submodule update failed")
         fi
       fi
     else
       echo "Failed to clone $name ($url), skipping." >&2
+      FAILED=$((FAILED+1))
+      FAILED_LIST+=("$name: clone failed ($url)")
       continue
     fi
   else
@@ -251,6 +300,8 @@ while IFS= read -r line || [[ -n "$line" ]]; do
       logv "Fetching updates for $name"
       if ! "${git_cmd[@]}" -C "$repo_dir" fetch --prune --tags; then
         echo "Failed to fetch for $name, continuing." >&2
+        FAILED=$((FAILED+1))
+        FAILED_LIST+=("$name: fetch failed")
         continue
       fi
 
@@ -258,22 +309,43 @@ while IFS= read -r line || [[ -n "$line" ]]; do
       if [[ -z "$(git -C "$repo_dir" status --porcelain)" ]]; then
         branch=$(git -C "$repo_dir" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
         if [[ -n "$branch" && "$branch" != "HEAD" ]]; then
-          if "${git_cmd[@]}" -C "$repo_dir" pull --ff-only; then
-            log "Updated $name (branch: $branch)"
-          else
-            logv "Could not fast-forward $name (branch: $branch); manual intervention may be required."
-          fi
+            if "${git_cmd[@]}" -C "$repo_dir" pull --ff-only; then
+              log "Updated $name (branch: $branch)"
+              UPDATED=$((UPDATED+1))
+            else
+              logv "Could not fast-forward $name (branch: $branch); manual intervention may be required."
+            fi
         else
           logv "$name is in detached HEAD or has no branch; skipping pull."
         fi
-      else
+        else
         logv "Local changes present in $name; skipping pull to avoid overwriting local work."
+        SKIPPED_LOCAL=$((SKIPPED_LOCAL+1))
       fi
-    else
-      echo "Path $repo_dir exists but is not a git repository; skipping." >&2
-      continue
-    fi
+      else
+        echo "Path $repo_dir exists but is not a git repository; skipping." >&2
+        FAILED=$((FAILED+1))
+        FAILED_LIST+=("$name: path exists but not a git repository")
+        continue
+      fi
   fi
 done < "$tmpfile"
+
+# Print summary
+echo
+echo "Summary for $USERNAME -> $DEST_DIR"
+echo "  Total repositories discovered: $TOTAL"
+echo "  Cloned: $CLONED"
+echo "  Updated (fast-forward): $UPDATED"
+echo "  Skipped (local changes): $SKIPPED_LOCAL"
+echo "  Submodule warnings: $SUBMODULE_WARN"
+echo "  Failed operations: $FAILED"
+if (( ${#FAILED_LIST[@]} > 0 )); then
+  echo
+  echo "Failures / warnings:" >&2
+  for f in "${FAILED_LIST[@]}"; do
+    echo "  - $f" >&2
+  done
+fi
 
 exit 0
