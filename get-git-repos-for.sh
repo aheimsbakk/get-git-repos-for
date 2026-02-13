@@ -22,8 +22,7 @@ Options:
   -V, --version          Print version and exit
   -v                     Increase verbosity (can be used multiple times)
   --use-https            Use HTTPS clone URLs instead of SSH
-  -d DIR, --dest DIR,
-  --dest-dir DIR         Destination base directory for all repositories (default: current directory)
+  -d DIR, --dest DIR     Destination base directory for all repositories (default: current directory)
 
 Environment:
   GITHUB_TOKEN           Optional GitHub token to increase rate limits and access private repos
