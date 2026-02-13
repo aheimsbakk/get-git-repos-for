@@ -62,7 +62,7 @@ while [[ $# -gt 0 ]]; do
       DEST_DIR="$1"
       shift
       ;;
-    --dest|--dest-dir)
+    --dest)
       shift
       if [[ -z "$1" || "${1:0:1}" == "-" ]]; then
         echo "Error: --dest requires a directory argument" >&2
@@ -72,7 +72,7 @@ while [[ $# -gt 0 ]]; do
       DEST_DIR="$1"
       shift
       ;;
-    --dest=*|--dest-dir=*)
+    --dest=*)
       DEST_DIR="${1#*=}"
       shift
       ;;

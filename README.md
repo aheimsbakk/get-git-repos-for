@@ -32,8 +32,7 @@ Options:
   -V, --version          Print version and exit
   -v                     Increase verbosity (can be used multiple times)
   --use-https            Use HTTPS clone URLs instead of SSH
-  -d DIR, --dest DIR,
-  --dest-dir DIR         Destination base directory for all repositories (default: current directory)
+  -d DIR, --dest DIR     Destination base directory for all repositories (default: current directory)
 
 Environment:
   GITHUB_TOKEN           Optional GitHub token to increase rate limits and access private repos
@@ -54,7 +53,7 @@ Examples
 ./get-git-repos-for.sh --use-https octocat
 ```
 
-- Clone into a specific destination directory (creates `DIR/<username>/`):
+-- Clone into a specific destination directory:
 
 ```sh
 ./get-git-repos-for.sh -d ~/backups/github octocat
@@ -76,7 +75,7 @@ GITHUB_TOKEN=ghp_... ./get-git-repos-for.sh octocat
 
 Behavior details
 ----------------
-- Destination directory: by default repositories are created under `./`. Use `-d DIR` / `--dest DIR` / `--dest-dir DIR` to set a different base directory. The script will create `DIR` if it does not exist and will fail early if it cannot create that path. Repositories will be cloned directly into `DIR/<repo>` (no per-user subdirectory).
+-- Destination directory: by default repositories are created under `./`. Use `-d DIR` / `--dest DIR` to set a different base directory. The script will create `DIR` if it does not exist and will fail early if it cannot create that path. Repositories will be cloned directly into `DIR/<repo>` (no per-user subdirectory).
 - The script calls the GitHub REST API to list repositories using pagination (`per_page=100`).
 - By default, clones use the repository's SSH URL (`ssh_url`). Pass `--use-https` to use the HTTPS clone URL instead.
 - Existing repositories are not overwritten. The script runs `git fetch --prune --tags` for existing clones and will attempt `git pull --ff-only` only if the working tree is clean and the current HEAD points to a branch.
