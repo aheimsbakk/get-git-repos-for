@@ -138,6 +138,16 @@ if [[ -n "${GITHUB_TOKEN:-}" ]]; then
   logv "Using GITHUB_TOKEN for authenticated API requests"
 fi
 
+# Build git command prefix. When using HTTPS and a GITHUB_TOKEN is present,
+# pass the token to git via `-c http.extraHeader=Authorization: token ...`
+# This allows authenticated HTTPS clones/fetches without embedding the token
+# in remote URLs.
+git_cmd=(git)
+if [[ "$USE_HTTPS" -eq 1 && -n "${GITHUB_TOKEN:-}" ]]; then
+  git_cmd+=( -c "http.extraHeader=Authorization: token ${GITHUB_TOKEN}" )
+  logv "git commands will include HTTP Authorization header for HTTPS operations"
+fi
+
 # Fetch repositories, paginated
 while :; do
   url="$API/users/$USERNAME/repos?per_page=$PER_PAGE&page=$page"
@@ -185,7 +195,7 @@ while IFS= read -r line || [[ -n "$line" ]]; do
   log "Processing: $name"
   if [[ ! -d "$repo_dir" ]]; then
     logv "Cloning $name into $repo_dir"
-    if git clone "$url" "$repo_dir"; then
+    if "${git_cmd[@]}" clone "$url" "$repo_dir"; then
       log "Cloned $name"
       # Handle submodules. When using HTTPS, rewrite submodule URLs that use SSH (git@) or git://
       if [[ -f "$repo_dir/.gitmodules" ]]; then
@@ -196,12 +206,12 @@ while IFS= read -r line || [[ -n "$line" ]]; do
             cp "$repo_dir/.gitmodules" "$repo_dir/.gitmodules.bak" 2>/dev/null || true
             sed -E -i 's#git@github.com:([^[:space:]]+)#https://github.com/\1#g; s#git://github.com/([^[:space:]]+)#https://github.com/\1#g' "$repo_dir/.gitmodules" || true
             logv "Rewrote $repo_dir/.gitmodules to use HTTPS (backup at .gitmodules.bak)"
-            git -C "$repo_dir" submodule sync --recursive || true
+            "${git_cmd[@]}" -C "$repo_dir" submodule sync --recursive || true
           else
             logv "No SSH/git:// submodule URLs detected in .gitmodules"
           fi
         fi
-        if ! git -C "$repo_dir" submodule update --init --recursive; then
+        if ! "${git_cmd[@]}" -C "$repo_dir" submodule update --init --recursive; then
           echo "Warning: submodule update failed for $name; some submodules may not have been cloned." >&2
         fi
       fi
@@ -213,7 +223,7 @@ while IFS= read -r line || [[ -n "$line" ]]; do
     # Update existing repository
     if git -C "$repo_dir" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
       logv "Fetching updates for $name"
-      if ! git -C "$repo_dir" fetch --prune --tags; then
+      if ! "${git_cmd[@]}" -C "$repo_dir" fetch --prune --tags; then
         echo "Failed to fetch for $name, continuing." >&2
         continue
       fi
@@ -222,7 +232,7 @@ while IFS= read -r line || [[ -n "$line" ]]; do
       if [[ -z "$(git -C "$repo_dir" status --porcelain)" ]]; then
         branch=$(git -C "$repo_dir" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
         if [[ -n "$branch" && "$branch" != "HEAD" ]]; then
-          if git -C "$repo_dir" pull --ff-only; then
+          if "${git_cmd[@]}" -C "$repo_dir" pull --ff-only; then
             log "Updated $name (branch: $branch)"
           else
             logv "Could not fast-forward $name (branch: $branch); manual intervention may be required."
