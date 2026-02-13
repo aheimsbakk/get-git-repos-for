@@ -14,6 +14,8 @@ Options:
   --version        Print version and exit
   -v               Increase verbosity (can be used multiple times)
   --use-https      Use HTTPS clone URLs instead of SSH
+  -d DIR, --dest DIR, --dest-dir DIR
+                   Destination base directory for all repositories (default: current directory)
 
 Environment:
   GITHUB_TOKEN     Optional GitHub token to increase rate limits and access private repos
@@ -26,6 +28,7 @@ USAGE
 
 VERBOSE=0
 USE_HTTPS=0
+DEST_DIR="."
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -39,6 +42,30 @@ while [[ $# -gt 0 ]]; do
       ;;
     -v)
       VERBOSE=$((VERBOSE+1))
+      shift
+      ;;
+    -d)
+      shift
+      if [[ -z "$1" || "${1:0:1}" == "-" ]]; then
+        echo "Error: -d requires a directory argument" >&2
+        usage
+        exit 2
+      fi
+      DEST_DIR="$1"
+      shift
+      ;;
+    --dest|--dest-dir)
+      shift
+      if [[ -z "$1" || "${1:0:1}" == "-" ]]; then
+        echo "Error: --dest requires a directory argument" >&2
+        usage
+        exit 2
+      fi
+      DEST_DIR="$1"
+      shift
+      ;;
+    --dest=*|--dest-dir=*)
+      DEST_DIR="${1#*=}"
       shift
       ;;
     --use-https)
@@ -88,7 +115,11 @@ API="https://api.github.com"
 PER_PAGE=100
 page=1
 
-mkdir -p "$USERNAME"
+if ! mkdir -p "$DEST_DIR/$USERNAME"; then
+  echo "Failed to create destination directory: $DEST_DIR/$USERNAME" >&2
+  exit 8
+fi
+logv "Destination base directory: $DEST_DIR"
 
 tmpfile=""
 tmpfile=$(mktemp) || { echo "failed to create temp file" >&2; exit 4; }
@@ -137,7 +168,7 @@ while IFS= read -r line || [[ -n "$line" ]]; do
   ssh_url=$(printf '%s' "$line" | jq -r '.ssh_url')
   clone_url=$(printf '%s' "$line" | jq -r '.clone_url')
 
-  repo_dir="$USERNAME/$name"
+  repo_dir="$DEST_DIR/$USERNAME/$name"
   if [[ "$USE_HTTPS" -eq 1 ]]; then
     url="$clone_url"
   else
