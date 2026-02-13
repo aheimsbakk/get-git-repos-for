@@ -144,8 +144,23 @@ fi
 # in remote URLs.
 git_cmd=(git)
 if [[ "$USE_HTTPS" -eq 1 && -n "${GITHUB_TOKEN:-}" ]]; then
-  git_cmd+=( -c "http.extraHeader=Authorization: token ${GITHUB_TOKEN}" )
-  logv "git commands will include HTTP Authorization header for HTTPS operations"
+  # Prefer Basic auth for git over HTTPS: Authorization: Basic <base64(x-access-token:TOKEN)>
+  if command -v base64 >/dev/null 2>&1; then
+    auth_b64=$(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 | tr -d '\n')
+  elif command -v python3 >/dev/null 2>&1; then
+    auth_b64=$(python3 -c "import base64,sys;print(base64.b64encode(b'x-access-token:'+sys.argv[1].encode()).decode())" "$GITHUB_TOKEN")
+  elif command -v openssl >/dev/null 2>&1; then
+    auth_b64=$(printf 'x-access-token:%s' "$GITHUB_TOKEN" | openssl base64 -A)
+  else
+    echo "Warning: cannot encode auth header (no base64/python3/openssl found); HTTPS auth will not be available" >&2
+    auth_b64=""
+  fi
+  if [[ -n "$auth_b64" ]]; then
+    git_cmd=(git -c "http.extraHeader=Authorization: Basic $auth_b64")
+    logv "git commands will include HTTP Basic Authorization header for HTTPS operations"
+  else
+    logv "git commands will run without extra HTTP Authorization header"
+  fi
 fi
 
 # Fetch repositories, paginated
