@@ -40,10 +40,9 @@ Updated README to explain the container purpose in plain language, corrected typ
 
 Agent workflow (required)
 1. Read recent worklogs in `agent/worklogs/` (newest → oldest) to build context for the planned task.
-2. Create a new worklog file `agent/worklogs/YYYY-MM-DD-short.md` containing only the required front-matter keys (see above) and a 1–3 sentence body describing the change. Do this before or immediately after making changes.
-3. If you find step 2 easy to forget, adopt a simple rule: always create a new worklog entry before each commit. This ensures every change has an associated worklog and avoids accidental omissions.
+2. Create a new worklog file `agent/worklogs/YYYY-MM-DD-short.md` containing only the required front-matter keys (see above) and a 1–3 sentence body describing the change. This worklog MUST be created before each commit. Whenever possible create the worklog before making code or content changes; if that is impossible, create the worklog immediately after making changes but before committing. If you find this easy to forget, adopt the simple rule: always create the worklog before you run `git commit`.
 3. Perform changes locally or inside the container.
-4. Commit changes. Include the compact context summary in the PR description when appropriate.
+4. Commit changes. Include the compact context summary in the PR description when appropriate; ensure the worklog exists in `agent/worklogs/` for every commit you push.
 5. Do not add additional provenance data to the worklog file. If external audited provenance is required (commit SHA, model release), store that mapping in an access-controlled audit system outside the repository and reference it in communications, but not in worklogs.
 
 Safety & best practices
