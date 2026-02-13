@@ -125,7 +125,7 @@ tmpfile=""
 tmpfile=$(mktemp) || { echo "failed to create temp file" >&2; exit 4; }
 trap 'rm -f "$tmpfile"' EXIT
 
-auth_header=""
+auth_header=()
 if [[ -n "${GITHUB_TOKEN:-}" ]]; then
   auth_header=( -H "Authorization: token ${GITHUB_TOKEN}" )
   logv "Using GITHUB_TOKEN for authenticated API requests"
@@ -178,8 +178,31 @@ while IFS= read -r line || [[ -n "$line" ]]; do
   log "Processing: $name"
   if [[ ! -d "$repo_dir" ]]; then
     logv "Cloning $name into $repo_dir"
-    if git clone --recurse-submodules "$url" "$repo_dir"; then
+    if git clone "$url" "$repo_dir"; then
       log "Cloned $name"
+      # Handle submodules. When using HTTPS, rewrite submodule URLs that use SSH (git@) or git://
+      if [[ -f "$repo_dir/.gitmodules" ]]; then
+        logv "Repository has submodules; initializing"
+        if [[ "$USE_HTTPS" -eq 1 ]]; then
+          logv "Converting submodule URLs to HTTPS where necessary"
+          # Iterate submodule.url keys from the .gitmodules file
+          while IFS= read -r cfg; do
+            key=$(printf '%s' "$cfg" | awk '{print $1}')
+            val=$(printf '%s' "$cfg" | awk '{print $2}')
+            # Convert common SSH/git URL forms to HTTPS
+            newval=$(printf '%s' "$val" | sed -E 's#^git@github.com:(.+)$#https://github.com/\1#; s#^git://github.com/(.+)$#https://github.com/\1#')
+            if [[ "$newval" != "$val" ]]; then
+              logv "Updating submodule URL: $val -> $newval"
+              git -C "$repo_dir" config -f "$repo_dir/.gitmodules" "$key" "$newval" || true
+            fi
+          done < <(git -C "$repo_dir" config -f "$repo_dir/.gitmodules" --get-regexp '^submodule\..*\.url$' 2>/dev/null || true)
+          # Synchronize and update submodules
+          git -C "$repo_dir" submodule sync --recursive || true
+        fi
+        if ! git -C "$repo_dir" submodule update --init --recursive; then
+          echo "Warning: submodule update failed for $name; some submodules may not have been cloned." >&2
+        fi
+      fi
     else
       echo "Failed to clone $name ($url), skipping." >&2
       continue
