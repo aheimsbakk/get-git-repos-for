@@ -7,7 +7,7 @@ VERSION="0.1.0"
 
 usage() {
   cat <<USAGE
-Usage: $(basename "$0") [options] <github-username>
+Usage: $(basename "$0") [-d DIR] [--use-https] [-v] <github-username>
 
 Run $(basename "$0") --help for full details
 USAGE
