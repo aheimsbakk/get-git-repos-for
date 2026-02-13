@@ -54,6 +54,15 @@ Validation & enforcement (recommended)
 - Add a CI check that validates worklog YAML: files under `agent/worklogs/*.md` must include exactly the allowed keys (`date`, `who`, `why`, `what`, `model`, `tags`) and a non-empty body with 1–3 short sentences. The CI should fail on new or modified worklogs that violate this rule.
 - Suggested local validator script: `scripts/validate-worklogs.py` (example available in AGENT.md history).
 
+- Enforce semantic versioning for scripts: If a commit modifies a file that declares a top-level `VERSION` variable (for example `VERSION="0.1.0"`), the commit MUST also update that `VERSION` according to semantic versioning (MAJOR.MINOR.PATCH). Use these rules when choosing the increment:
+  - PATCH: backwards-compatible bug fixes
+  - MINOR: backwards-compatible new features or enhancements
+  - MAJOR: incompatible API or behavioral changes
+
+- Worklog requirement for version bumps: the worklog associated with the commit must include the new version string in the worklog body (not in front-matter) and a one-sentence rationale for the level of the version bump (patch/minor/major).
+
+- CI enforcement suggestion: add a CI check that detects commits which modify files containing a `VERSION` declaration and verifies that the `VERSION` value was updated and matches SemVer syntax. The CI should fail the run when a script is changed without a corresponding version bump.
+
 Automation suggestions
 - Pre-commit helper: a small script to create a new worklog from a template so authors don't accidentally add forbidden keys.
 - Optional: keep an off-repo audit log for sensitive provenance (commit SHAs, model versions). Reference the audit entry ID off-repo if needed; do not store it in the repo worklogs.
