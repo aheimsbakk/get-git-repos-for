@@ -7,4 +7,4 @@ model: github-copilot/gpt-5-mini
 tags: [docs,workflow]
 ---
 
-Updated the detailed `--help` text in `get-git-repos-for.sh` to remove the redundant `--dest-dir` alias and reflect the current supported flags (`-d` and `--dest`). Files changed: `get-git-repos-for.sh`.
+Updated the detailed `--help` text in `sync-github-repos.sh` to remove the redundant `--dest-dir` alias and reflect the current supported flags (`-d` and `--dest`). Files changed: `sync-github-repos.sh`.

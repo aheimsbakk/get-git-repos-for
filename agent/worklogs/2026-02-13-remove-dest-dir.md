@@ -7,4 +7,4 @@ model: github-copilot/gpt-5-mini
 tags: [scripts,docs]
 ---
 
-Removed the redundant `--dest-dir` long option in favor of `-d` and `--dest` only. Updated the script help and `README.md` to reflect this change. Files changed: `get-git-repos-for.sh`, `README.md`.
+Removed the redundant `--dest-dir` long option in favor of `-d` and `--dest` only. Updated the script help and `README.md` to reflect this change. Files changed: `sync-github-repos.sh`, `README.md`.

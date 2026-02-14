@@ -7,4 +7,4 @@ model: github-copilot/gpt-5-mini
 tags: [scripts,docs]
 ---
 
-Updated the compact usage printed when the script is run without arguments to include the most-used options (`-d DIR`, `--use-https`, `-v`) so it's immediately actionable in CLI contexts. File changed: `get-git-repos-for.sh`.
+Updated the compact usage printed when the script is run without arguments to include the most-used options (`-d DIR`, `--use-https`, `-v`) so it's immediately actionable in CLI contexts. File changed: `sync-github-repos.sh`.

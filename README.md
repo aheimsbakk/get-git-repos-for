@@ -1,9 +1,9 @@
-# get-git-repos-for.sh
+# sync-github-repos.sh
 
 **Clone or update all GitHub repositories for a specific user.**
 
 ## Overview
-`get-git-repos-for.sh` fetches all public repositories (and private ones via `GITHUB_TOKEN`) for a GitHub user. It clones new repositories or updates existing ones via fast-forward pulls.
+`sync-github-repos.sh` fetches all public repositories (and private ones via `GITHUB_TOKEN`) for a GitHub user. It clones new repositories or updates existing ones via fast-forward pulls.
 
 ## Requirements
 * **bash** (4+)
@@ -11,12 +11,12 @@
 
 ## Installation
 ```sh
-chmod +x get-git-repos-for.sh
+chmod +x sync-github-repos.sh
 ```
 
 ## Usage
 ```sh
-./get-git-repos-for.sh [options] <github-username>
+./sync-github-repos.sh [options] <github-username>
 ```
 
 ### Options
@@ -36,17 +36,17 @@ chmod +x get-git-repos-for.sh
 
 **Clone public repos (SSH default):**
 ```sh
-./get-git-repos-for.sh octocat
+./sync-github-repos.sh octocat
 ```
 
 **Clone via HTTPS to a specific folder:**
 ```sh
-./get-git-repos-for.sh --use-https --dest ~/backups/github octocat
+./sync-github-repos.sh --use-https --dest ~/backups/github octocat
 ```
 
 **Clone private repos (requires token):**
 ```sh
-GITHUB_TOKEN=ghp_... ./get-git-repos-for.sh octocat
+GITHUB_TOKEN=ghp_... ./sync-github-repos.sh octocat
 ```
 
 ## Behavior Details

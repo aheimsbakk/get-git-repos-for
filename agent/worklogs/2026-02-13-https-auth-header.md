@@ -7,4 +7,4 @@ model: github-copilot/gpt-5-mini
 tags: [scripts,security]
 ---
 
-When `--use-https` is used and `GITHUB_TOKEN` is set, the script now invokes git with `-c "http.extraHeader=Authorization: token $GITHUB_TOKEN"` so HTTPS operations are authenticated. This avoids embedding credentials into remote URLs and keeps tokens out of git configs. Files changed: `get-git-repos-for.sh`.
+When `--use-https` is used and `GITHUB_TOKEN` is set, the script now invokes git with `-c "http.extraHeader=Authorization: token $GITHUB_TOKEN"` so HTTPS operations are authenticated. This avoids embedding credentials into remote URLs and keeps tokens out of git configs. Files changed: `sync-github-repos.sh`.

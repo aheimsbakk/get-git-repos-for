@@ -7,4 +7,4 @@ model: github-copilot/gpt-5-mini
 tags: [scripts,automation]
 ---
 
-Added `-d/--dest/--dest-dir` option to `get-git-repos-for.sh` so callers can set a base directory for all cloned repositories. File changed: `get-git-repos-for.sh`. Follow-up: update `README.md` to document the new option.
+Added `-d/--dest/--dest-dir` option to `sync-github-repos.sh` so callers can set a base directory for all cloned repositories. File changed: `sync-github-repos.sh`. Follow-up: update `README.md` to document the new option.

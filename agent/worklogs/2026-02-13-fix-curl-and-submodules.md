@@ -2,7 +2,7 @@
 date: 2026-02-13T19:46:00Z
 who: assistant@openai
 why: fix runtime errors discovered while testing the script
-what: handle curl header correctly and improve submodule HTTPS handling in get-git-repos-for.sh
+what: handle curl header correctly and improve submodule HTTPS handling in sync-github-repos.sh
 model: github-copilot/gpt-5-mini
 tags: [scripts,automation]
 ---

@@ -7,4 +7,4 @@ model: github-copilot/gpt-5-mini
 tags: [docs,cli]
 ---
 
-Updated the script detailed help (`help()` output) to show the short `-V` alias alongside `--version` so users see both options when requesting `--help`. Files changed: `get-git-repos-for.sh`.
+Updated the script detailed help (`help()` output) to show the short `-V` alias alongside `--version` so users see both options when requesting `--help`. Files changed: `sync-github-repos.sh`.

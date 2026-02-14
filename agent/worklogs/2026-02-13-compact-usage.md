@@ -2,7 +2,7 @@
 date: 2026-02-13T20:30:00Z
 who: assistant@openai
 why: make CLI show compact usage when no arguments are provided
-what: add short usage message to get-git-repos-for.sh and avoid printing full help on missing args
+what: add short usage message to sync-github-repos.sh and avoid printing full help on missing args
 model: github-copilot/gpt-5-mini
 tags: [scripts,workflow]
 ---

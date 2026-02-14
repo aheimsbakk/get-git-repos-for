@@ -8,7 +8,7 @@ usage() {
   cat <<USAGE
 Usage: $(basename "$0") <new-version> [files...]
 
-Updates VERSION="..." in the specified files (defaults to get-git-repos-for.sh)
+Updates VERSION="..." in the specified files (defaults to sync-github-repos.sh)
 and creates a worklog template under agent/worklogs documenting the bump.
 USAGE
 }
@@ -26,7 +26,7 @@ if ! [[ $new_version =~ ^[0-9]+\.[0-9]+\.[0-9]+([-+][A-Za-z0-9.-]+)?$ ]]; then
   exit 3
 fi
 
-files=("get-git-repos-for.sh")
+  files=("sync-github-repos.sh")
 if [[ $# -gt 0 ]]; then
   files=()
   while [[ $# -gt 0 ]]; do

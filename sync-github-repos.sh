@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# get-git-repos-for.sh - clone or update all GitHub repos for a given user
+# sync-github-repos.sh - clone or update all GitHub repos for a given user
 #
 # Minimal dependencies: bash, git, curl, jq
 
-VERSION="1.0.1"
+VERSION="2.0.0"
 
 usage() {
   cat <<USAGE

@@ -7,4 +7,4 @@ model: github-copilot/gpt-5-mini
 tags: [scripts,cli]
 ---
 
-Added `-V` as a short flag alias for `--version` so the script supports both forms. Updated `get-git-repos-for.sh` and `README.md` to document the short flag. Files changed: `get-git-repos-for.sh`, `README.md`.
+Added `-V` as a short flag alias for `--version` so the script supports both forms. Updated `sync-github-repos.sh` and `README.md` to document the short flag. Files changed: `sync-github-repos.sh`, `README.md`.

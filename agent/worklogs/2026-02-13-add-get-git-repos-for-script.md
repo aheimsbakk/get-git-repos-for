@@ -7,4 +7,4 @@ model: github-copilot/gpt-5-mini
 tags: [scripts,automation]
 ---
 
-Added a plan (BLUEPRINT.md), the implementation script (`get-git-repos-for.sh`), and a usage README (`README.md`). The script lists a user's GitHub repos and clones or fetches them into `./<username>/` using SSH by default; `--use-https` switches to HTTPS.
+Added a plan (BLUEPRINT.md), the implementation script (`sync-github-repos.sh`), and a usage README (`README.md`). The script lists a user's GitHub repos and clones or fetches them into `./<username>/` using SSH by default; `--use-https` switches to HTTPS.

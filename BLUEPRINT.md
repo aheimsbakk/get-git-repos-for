@@ -21,8 +21,8 @@ Non-Goals
 
 CLI specification
 -----------------
-- Name: `get-git-repos-for.sh`
-- Usage: `get-git-repos-for.sh [options] <github-username>`
+- Name: `sync-github-repos.sh`
+- Usage: `sync-github-repos.sh [options] <github-username>`
 - Options:
   - `-h`, `--help`: show help and exit
   - `--version`: print version and exit

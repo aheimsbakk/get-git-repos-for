@@ -7,4 +7,4 @@ model: github-copilot/gpt-5-mini
 tags: [scripts,automation]
 ---
 
-When `GITHUB_TOKEN` is set and the authenticated user matches the requested username, the script now lists repositories via `/user/repos?visibility=all` instead of `/users/:username/repos`. This ensures private repositories are included in the result set for cloning/updating. Files changed: `get-git-repos-for.sh`.
+When `GITHUB_TOKEN` is set and the authenticated user matches the requested username, the script now lists repositories via `/user/repos?visibility=all` instead of `/users/:username/repos`. This ensures private repositories are included in the result set for cloning/updating. Files changed: `sync-github-repos.sh`.
