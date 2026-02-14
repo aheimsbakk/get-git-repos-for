@@ -2,7 +2,7 @@
 
 ## 1. Worklogs
 **Rule:** Every change requires a worklog file.
-- **Path:** `agent/worklogs/YYYY-MM-DD-{short-desc}.md`
+- **Path:** `agent/worklogs/YYYY-MM-DD-HH-mm-{short-desc}.md`
 - **Front Matter (Strict):** Must contain ONLY these keys:
   ```yaml
   ---
@@ -21,6 +21,7 @@
 1. **Context:** Read recent logs in `agent/worklogs/`.
 2. **Create:** Generate the worklog file BEFORE committing.
 3. **Commit:** Push changes + worklog.
+   - **Commit message:** Conventional commit message format. 
 4. **Diary (Optional):** If compressing context, append to `DIARY.md`:
    - Header: `## YYYY-MM-DD HH:mm`
    - Content: Bulleted summary of the session.
