@@ -1,114 +1,75 @@
 # get-git-repos-for.sh
 
-Clone or update all GitHub repositories for a given user.
+**Clone or update all GitHub repositories for a specific user.**
 
-Overview
---------
-`get-git-repos-for.sh` is a small Bash script that fetches all public (and optionally private, when using `GITHUB_TOKEN`) repositories for a specified GitHub user and clones them into a local folder named after the user, or updates the existing clones by fetching and attempting fast-forward pulls when safe.
+## Overview
+`get-git-repos-for.sh` fetches all public repositories (and private ones via `GITHUB_TOKEN`) for a GitHub user. It clones new repositories or updates existing ones via fast-forward pulls.
 
-Requirements
-------------
-- bash (tested with bash 4+)
-- git
-- curl
-- jq
+## Requirements
+* **bash** (4+)
+* **git**, **curl**, **jq**
 
-Installation
-------------
-Make the script executable:
-
+## Installation
 ```sh
 chmod +x get-git-repos-for.sh
 ```
 
-Usage
------
-
-```
-get-git-repos-for.sh [options] <github-username>
-
-Options:
-  -h, --help             Show help and exit
-  -V, --version          Print version and exit
-  -v                     Increase verbosity (can be used multiple times)
-   --use-https            Use HTTPS clone URLs instead of SSH
-   --no-submodules        Do not init/update submodules for repositories
-  -d DIR, --dest DIR     Destination base directory for all repositories (default: current directory)
-
-Environment:
-  GITHUB_TOKEN           Optional GitHub token to increase rate limits and access private repos
+## Usage
+```sh
+./get-git-repos-for.sh [options] <github-username>
 ```
 
-Examples
---------
+### Options
+| Flag | Description |
+| :--- | :--- |
+| `-d`, `--dest <DIR>` | Destination directory (default: current directory `.` ). |
+| `--use-https` | Use HTTPS clone URLs (default: SSH). |
+| `--no-submodules` | Skip submodule initialization/updates. |
+| `-v` | Increase verbosity. |
+| `-h`, `--help` | Show help. |
+| `-V`, `--version` | Show version. |
 
-- Clone all public repos for user `octocat` (uses SSH by default):
+### Environment
+* **`GITHUB_TOKEN`**: Set this environment variable to increase API rate limits or access private repositories.
 
+## Examples
+
+**Clone public repos (SSH default):**
 ```sh
 ./get-git-repos-for.sh octocat
 ```
 
-- Clone using HTTPS (useful when SSH keys aren't configured):
-
+**Clone via HTTPS to a specific folder:**
 ```sh
-./get-git-repos-for.sh --use-https octocat
+./get-git-repos-for.sh --use-https --dest ~/backups/github octocat
 ```
 
--- Clone into a specific destination directory:
-
-```sh
-./get-git-repos-for.sh -d ~/backups/github octocat
-# or
-./get-git-repos-for.sh --dest tmp/ --use-https aheimsbakk
-```
-
-- Increase verbosity to see more logs:
-
-```sh
-./get-git-repos-for.sh -v octocat
-```
-
-- Include private repos (requires a token with repo scope):
-
+**Clone private repos (requires token):**
 ```sh
 GITHUB_TOKEN=ghp_... ./get-git-repos-for.sh octocat
 ```
 
-Behavior details
-----------------
--- Destination directory: by default repositories are created under `./`. Use `-d DIR` / `--dest DIR` to set a different base directory. The script will create `DIR` if it does not exist and will fail early if it cannot create that path. Repositories will be cloned directly into `DIR/<repo>` (no per-user subdirectory).
-- The script calls the GitHub REST API to list repositories using pagination (`per_page=100`).
-- By default, clones use the repository's SSH URL (`ssh_url`). Pass `--use-https` to use the HTTPS clone URL instead.
-- Existing repositories are not overwritten. The script runs `git fetch --prune --tags` for existing clones and will attempt `git pull --ff-only` only if the working tree is clean and the current HEAD points to a branch.
-- If a local repo has uncommitted changes or is in a detached HEAD state, the script will skip the `git pull` to avoid overwriting local work.
+## Behavior Details
 
-Submodules
-----------
+* **Directory Structure:** Repositories are cloned directly into the destination `DIR/<repo>`. The script creates `DIR` if missing.
+* **Pagination:** Fetches repositories in batches of 100 via GitHub REST API.
+* **Updates:** Existing repos undergo `git fetch --prune --tags`. A `git pull --ff-only` is attempted only if the working tree is clean and on a branch. Dirty or detached states are skipped to protect local changes.
+* **Error Handling:**
+    * Missing dependencies or API errors (e.g., 404, rate limit) cause immediate exit.
+    * Individual clone failures are logged to stderr; the script continues to the next repository.
 
-- When a newly cloned repository contains submodules the script will attempt to initialize and update them (`git submodule update --init --recursive`).
-- If `--use-https` is used the script will rewrite common SSH/git:// submodule URLs found in `.gitmodules` to the HTTPS equivalent (for example `git@github.com:user/repo.git` → `https://github.com/user/repo.git`) before syncing and updating submodules. This is performed locally in the clone's `.gitmodules` file and is not pushed to origin.
-- Despite rewriting, private submodules that require SSH-only access or additional credentials may still fail to clone over HTTPS. The script logs a warning and continues to the next repository in that case.
+### Submodules
+* **Auto-Update:** Recursively initializes and updates submodules by default.
+* **HTTPS Rewriting:** If `--use-https` is set, the script locally rewrites SSH submodule URLs (e.g., `git@github.com:...`) to HTTPS in `.gitmodules` to ensure access without SSH keys. This change is not pushed to origin.
 
-Note: rewriting `.gitmodules` is a local change in the clone to make submodule initialization work in HTTPS-only environments. If you prefer not to change `.gitmodules`, run the script without `--use-https` in environments that have SSH access to GitHub.
+## Security
+* **Tokens:** Never hardcode `GITHUB_TOKEN`. Use environment variables or CI secrets.
+* **Protocols:** SSH is the default to prevent credential leakage in logs.
 
-Error handling & notes
-----------------------
-- If dependencies (`git`, `curl`, `jq`) are missing, the script will exit with an error listing the missing tools.
-- If API errors (404, rate limiting) occur, the script prints the GitHub API message and exits non-zero.
-- Clone errors for an individual repository are logged to stderr and the script continues with other repositories.
-- Host key verification / SSH issues: when using SSH clones or submodules, `ssh` host key verification or missing SSH keys can cause clone failures. In those environments prefer `--use-https` or ensure SSH keys and known_hosts are configured.
+## Roadmap
+1. Add unit/integration tests (mocking API).
+2. Add CI pipeline.
+3. Add Organization support (`--org`).
 
-Security
---------
-- Do not hardcode `GITHUB_TOKEN` in scripts or version control. Prefer setting it in CI secret storage or an environment before running.
-- SSH is the default clone method to avoid exposing credentials in machine-readable logs.
-
-Next steps
-----------
-1. Add unit/integration tests that mock GitHub API responses.
-2. Add a small CI job that runs the script in a controlled environment.
-3. Optionally support organizations and include `--org` flag to fetch org repos.
-
-License
--------
+## License
 MIT
